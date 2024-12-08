@@ -27,9 +27,7 @@ export const fetchCourseDetails = async (course_id: number): Promise<CourseWithH
   let resp: Response;
 
   try {
-    resp = await fetch(`${BASE_URL}/${course_id}/`, {
-      headers: useTokenHeader(),
-    });
+    resp = await fetch(`${BASE_URL}/${course_id}/`, { headers: useTokenHeader() });
   } catch (err: any) {
     throw new Error("Failed to fetch course details. Please check your internet connection.");
   }

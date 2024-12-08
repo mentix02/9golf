@@ -1,5 +1,9 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+
+
+User = get_user_model()
 
 
 class Session(models.Model):
@@ -8,9 +12,14 @@ class Session(models.Model):
     PLAYER_COUNT_ANNOTATION = 'player_count'
 
     timestamp = models.DateTimeField(auto_now_add=True)
-    users = models.ManyToManyField('user.User', through='SessionUser', related_name='sessions')
     course = models.ForeignKey('course.Course', on_delete=models.CASCADE, related_name='sessions')
     added_by = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='created_sessions')
+    users = models.ManyToManyField(
+        'user.User',
+        related_name='sessions',
+        through='score.SessionUser',
+        through_fields=('session', 'user'),
+    )
 
     def __str__(self) -> str:
         return f'{self.course.name} #{self.id}'
@@ -32,41 +41,73 @@ class Role(models.IntegerChoices):
     ADMIN = 3, _('Admin')
 
 
-class SessionInviteType(models.IntegerChoices):
-    INVITE = 1, _('Invite')
-    REQUEST = 2, _('Request')
-
-
 class SessionUser(models.Model):
 
+    joined_on = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey('user.User', on_delete=models.CASCADE)
     role = models.PositiveSmallIntegerField(choices=Role.choices, default=Role.PLAYER)
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='session_users')
+    accepted_by = models.ForeignKey(
+        'user.User',
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+        related_name='accepted_users',
+    )
 
     def __str__(self) -> str:
         return f'{self.user.username} - {self.get_role_display()}'
 
     class Meta:
-        unique_together = ('session', 'user')
+        unique_together = ('session', 'user', 'role')
 
 
-class SessionInvite(models.Model):
+class SessionJoinAction(models.Model):
+
+    class ActionType(models.IntegerChoices):
+        INVITE = 1, _('Invite')
+        REQUEST = 2, _('Request')
 
     # Meta info
     timestamp = models.DateTimeField(auto_now_add=True)
+    inactive = models.BooleanField(default=False, db_index=True)
     role = models.PositiveSmallIntegerField(choices=Role.choices, default=Role.PLAYER)
-    type_of = models.PositiveSmallIntegerField(choices=SessionInviteType.choices, default=SessionInviteType.INVITE)
+    type_of = models.PositiveSmallIntegerField(choices=ActionType.choices, default=ActionType.INVITE)
 
     # Session
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='invites')
 
     # Users
-    sent_by = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='sent_invites')
-    sent_to = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='received_invites')
+    created_by = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='sent_invites')
+    created_for = models.ForeignKey(
+        'user.User', on_delete=models.SET_NULL, default=None, null=True, related_name='received_invites'
+    )
+
+    def deactivate(self):
+        self.inactive = True
+        self.save()
+
+    def accept(self, by: User) -> bool:
+        ActionType = self.__class__.ActionType
+
+        match self.type_of:
+            case ActionType.INVITE:
+                # created_for and by must be the same user
+                assert self.created_for == by, 'Cannot accept an invite that was not sent to you'
+                self.session.users.add(
+                    self.created_for, through_defaults={'role': self.role, 'accepted_by': self.created_by}
+                )
+            case ActionType.REQUEST:
+                self.session.users.add(self.created_by, through_defaults={'role': self.role, 'accepted_by': by})
+            case _:
+                return False
+
+        self.deactivate()
+        return True
 
     class Meta:
         ordering = ('-timestamp',)
-        unique_together = ('session', 'sent_to')
+        unique_together = [('session', 'created_by')]
 
 
 class Score(models.Model):

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from score.models import Score, Session, SessionInvite
+from score.models import Score, Session, SessionJoinAction
 
 
 class ScoreInline(admin.TabularInline):
@@ -15,7 +15,7 @@ class SessionAdmin(admin.ModelAdmin):
     list_display = ('id', 'course', 'timestamp', 'added_by')
 
 
-@admin.register(SessionInvite)
+@admin.register(SessionJoinAction)
 class SessionInviteAdmin(admin.ModelAdmin):
     list_filter = ('role',)
-    list_display = ('id', 'session', 'sent_by', 'sent_to', 'role', 'timestamp')
+    list_display = ('id', 'session', 'created_by', 'created_for', 'role', 'timestamp')

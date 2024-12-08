@@ -25,7 +25,7 @@ class Command(BaseCommand):
         try:
             model: type[Model] = apps.get_model(model_path)
         except LookupError:
-            models: list[Model] = apps.get_models()
+            models: list[type[Model]] = apps.get_models()
             model_paths = ", ".join([f'{model._meta.app_label}.{model.__name__}' for model in models])
             self.stderr.write(f'Available models: {model_paths}')
             self.stderr.write(f'Model "{model_path}" not found')
@@ -34,7 +34,13 @@ class Command(BaseCommand):
         return model
 
     def _serializer_validator_type(self, serializer_path: str) -> type[Serializer]:
-        module_path, class_name = serializer_path.rsplit('.', 1)
+
+        try:
+            module_path, class_name = serializer_path.rsplit('.', 1)
+        except ValueError:
+            self.stderr.write(f'Invalid serializer path: "{serializer_path}"')
+            exit(1)
+
         try:
             module = importlib.import_module(module_path)
         except ModuleNotFoundError:
@@ -54,7 +60,7 @@ class Command(BaseCommand):
         return serializer
 
     def get_version(self) -> str:
-        return '0a'
+        return '1a'
 
     def add_arguments(self, parser: argparse.ArgumentParser):
         parser.add_argument(
@@ -69,9 +75,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        print(options['model'])
-        print(options['serializer'])
-
         model: type[Model] = options['model']
         serializer: type[Serializer] = options['serializer']
 

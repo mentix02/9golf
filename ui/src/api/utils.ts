@@ -4,7 +4,7 @@ const signOutAndRedirect = () => {
 };
 
 export const checkAuthFailedOrSignOut = (resp: Response) => {
-  if (!resp.ok)
+  if (!resp.ok) {
     switch (resp.status) {
       case 401:
         signOutAndRedirect();
@@ -15,4 +15,5 @@ export const checkAuthFailedOrSignOut = (resp: Response) => {
       default:
         console.error("Failed to fetch data.");
     }
+  }
 };

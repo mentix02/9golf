@@ -1,5 +1,5 @@
 import { ref, toValue } from "vue";
-import type { Ref, MaybeRefOrGetter } from "vue";
+import type { MaybeRefOrGetter, Ref } from "vue";
 
 interface Loader {
   isLoading: Ref<boolean>;
@@ -7,7 +7,9 @@ interface Loader {
   startLoading: () => boolean;
 }
 
-export default function useLoader(initial: MaybeRefOrGetter<boolean> = false): Loader {
+export default function useLoader(
+  initial: MaybeRefOrGetter<boolean> = false,
+): Loader {
   const isLoading = ref(toValue(initial));
 
   const startLoading = () => (isLoading.value = true);

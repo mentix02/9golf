@@ -1,6 +1,14 @@
-import { defineStore, acceptHMRUpdate } from "pinia";
+import { acceptHMRUpdate, defineStore } from "pinia";
 
-type AlertType = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+type AlertType =
+  | "primary"
+  | "secondary"
+  | "success"
+  | "danger"
+  | "warning"
+  | "info"
+  | "light"
+  | "dark";
 
 export type Alert = {
   readonly type: AlertType;

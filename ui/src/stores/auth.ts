@@ -1,4 +1,4 @@
-import { defineStore, acceptHMRUpdate } from "pinia";
+import { acceptHMRUpdate, defineStore } from "pinia";
 
 import useAlertStore from "@/stores/alert";
 import type { TokenResponse } from "@/api/types/auth";
@@ -10,7 +10,11 @@ export type AuthState = {
 };
 
 const useAuthStore = defineStore("auth", {
-  state: (): AuthState => ({ token: undefined, username: undefined, avatar: undefined }),
+  state: (): AuthState => ({
+    token: undefined,
+    username: undefined,
+    avatar: undefined,
+  }),
 
   getters: {
     isAuthenticated(): boolean {

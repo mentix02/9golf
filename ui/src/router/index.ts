@@ -43,6 +43,7 @@ const router = createRouter({
     },
     {
       path: "/session/:id",
+      meta: { requiresAuth: true },
       children: [
         {
           path: "",
@@ -61,7 +62,10 @@ const router = createRouter({
 
 router.beforeEach((to, from) => {
   const authStore = useAuthStore();
-  if (to.name !== "login" && to.name !== "register" && to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (
+    to.name !== "login" && to.name !== "register" && to.meta.requiresAuth &&
+    !authStore.isAuthenticated
+  ) {
     return { name: "login" };
   }
   return true;
